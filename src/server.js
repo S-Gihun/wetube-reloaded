@@ -20,10 +20,10 @@ app.use(express.urlencoded({ extended: true})); //express applicatio이 form의 
 // videoRouter보다 위에 있어야하는 이유는 poseEdit을 가지고 있는 videoRouter보다 위에 있어야 req.body 사용이 가능하기 때문이다.
 
 app.use(session({
-    secret: "Hello!",
+    secret: process.env.COOKIE_SECRET,
     resave: false,
     saveUninitialized: false,
-    store: MongoStore.create({ mongoUrl: "mongodb://127.0.0.1:27017/wetube"})
+    store: MongoStore.create({ mongoUrl: process.env.DB_URL })
 })) // 브라우저가 우리의 backend와 상호작용할 때마다 session이라는 middleware가 브라우저에 cookie를 전송한다.
 // cookie는 backend가 나의 브라우저에 주는 정보 
 
