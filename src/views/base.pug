@@ -16,7 +16,7 @@ html(lan = "ko")
                         li
                             a(href="/users/logout") Log Out
                         li
-                            a(href="/my-profile") #{loggedInUser.name} 님의 Profile
+                            a(href=`/users/${loggedInUser._id}`) My Profile
                         li 
                             a(href="/videos/upload") Upload Video         
                     else        

@@ -1,6 +1,7 @@
 import User from "../models/User";
 import fetch from "node-fetch";
 import bcrypt from "bcrypt";
+import Video from "../models/video";
 import { errorMonitor } from "connect-mongo";
 
 export const getJoin = (req, res) => res.render("join", {pageTitle: "Join"});
@@ -123,11 +124,12 @@ export const postEdit = async(req, res) => {
     const pageTitle = "Edit Profile";
     const {
         session: {
-            user: {_id, email: sessionEmail, username: sessionUsername},
+            user: {_id, email: sessionEmail, username: sessionUsername, avatarUrl},
         },
+        file,
     } = req; // const _id = req.session.user._id
     const {name, email, username, location} = req.body;
-
+    
     const currentUser = req.session.user;
 
     if (currentUser.email !== email && (await User.exists({ email }))) {
@@ -145,7 +147,11 @@ export const postEdit = async(req, res) => {
     }
 
     const updatedUser = await User.findByIdAndUpdate(_id, {
-        name, email, username, location, 
+        avatarUrl: file ? file.path : avatarUrl,
+        name, 
+        email, 
+        username, 
+        location, 
     }, {new: true})
     req.session.user = updatedUser;
     return res.redirect("/users/edit");
@@ -178,4 +184,14 @@ export const postChangePassword = async (req, res) => {
     req.session.user.password = user.password //session 업데이트 해주기
     return res.redirect("/users/logout");
 }
-export const see = (req, res) => res.send("See User");
+
+export const see = async(req, res) => {
+    const { id } = req.params;
+    const user = await User.findById(id).populate("videos");
+    if(!user) {
+        return res.status(404).render("404", {pageTitle: "User not found."});
+    }
+    
+    
+    return res.render("user/profile", { pageTitle: `${user.name}의 Profile`, user});
+}

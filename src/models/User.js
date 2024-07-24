@@ -11,10 +11,13 @@ const userSchema = new mongoose.Schema({
     }},
     name: {type: String, required: true},
     location: String,
+    videos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Video"}],
 })
 
 userSchema.pre("save", async function(){ //this는 생성되는 User를 가르킨다.
-    this.password = await bcrypt.hash(this.password, 5);
+    if(this.isModified("password")){
+        this.password = await bcrypt.hash(this.password, 5);
+    }
 })
 
 const User = mongoose.model("User", userSchema);
