@@ -9,7 +9,7 @@ Video.find({}, (error, videos) =>{
 })
 */
 export const home = async(req, res) => {
-    const videos = await Video.find({}).sort({ createdAt: "desc"});
+    const videos = await Video.find({}).sort({ createdAt: "desc"}).populate("owner");
     return res.render("home", {pageTitle: "Home", videos}); //render (view이름 , 템플릿에 보낼 변수)
 
 }
@@ -104,7 +104,7 @@ export const search = async(req, res) => {
             title: {
                 $regex: new RegExp(`${keyword}$`, "i"),
             },
-        });
+        }).poplulate("owenr");
     }
     return res.render("search", {pageTitle: "Search", videos});
 }
