@@ -1,5 +1,7 @@
 import Video from "../models/video";
 import User from "../models/User";
+import Comment from "../models/Comment";
+
 /*
 Video.find({}, (error, videos) =>{
     if(error){
@@ -14,14 +16,16 @@ export const home = async(req, res) => {
 
 }
 
-export const watch = async(req, res) => {
+export const watch = async (req, res) => {
     const { id } = req.params;
-    const video = await(await Video.findById(id)).populate("owner"); //populate id로 유저 전체를 불러올 수 있다.
-    if(!video){
-        return res.status(404).render("404", {pageTitle:"Video not found."});
+    const video = await Video.findById(id).populate("owner").populate("comments");
+    console.log(video);
+    if (!video) {
+      return res.render("404", { pageTitle: "Video not found." });
     }
-    return res.render("watch", { pageTitle : video.title, video}); //video:video === video
-}
+    return res.render("watch", { pageTitle: video.title, video });
+  };
+
 export const getEdit = async(req, res) => {
     const { id } = req.params;
     const video = await Video.findById(id);
@@ -38,7 +42,7 @@ export const postEdit = async (req, res) => {
     const { id } = req.params;
     const { title, description, hashtags } = req.body;
     const { user: { _id}, } = req.session;
-    const video = await Video.exists({_id : id}); // ture or false 를 반환 !!
+    const video = await Video.findById(_id); // ture or false 를 반환 !!
     // const video = await Video.findById(id);
     if(!video){
         return res.render("404", {pageTitle:"Video not found."});
@@ -73,6 +77,7 @@ export const postUpload = async (req, res) => {
         user.videos.push(newVideo._id);
         user.save();
         //위에 const video = new Video{}로 하고 await video.save(); //데이터를 database에 전송하는데 시간이 걸린다. await async을 통해 database에 파일이 저장되는 것을 기다릴 수 있다.
+
         return res.redirect("/");
     } catch(error) {
         return res.status(400).render("upload", {pageTitle: "Upload Video", errorMessage: error._message, });
@@ -85,6 +90,7 @@ export const deleteVideo = async (req, res) => {
     const video = await Video.findById(id);
     const user = await User.findById(_id);
     if (String(video.owner) !== _id) {
+        req.flash("error", "You are not the owner of this video.");
         return res.status(403).redirect("/");
     }
     if(!video){
@@ -108,3 +114,53 @@ export const search = async(req, res) => {
     }
     return res.render("search", {pageTitle: "Search", videos});
 }
+
+export const registerView = async(req, res) => {
+    const {id} = req.params;
+    const video = await Video.findById(id);
+    if(!video) {
+        return res.sendStatus(404); // 그냥 status는 아무것도 반환하지 않는다 sendStatus로 연결을 끊어낼 수 있디 .
+    }
+    video.meta.views = video.meta.views + 1;
+    await video.save();
+    return res.sendStatus(200);
+}
+
+export const createComment = async (req, res) => {
+    const {
+      session: { user },
+      body: { text },
+      params: { id },
+    } = req;
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.sendStatus(404);
+    }
+    const comment = await Comment.create({
+      text,
+      owner: user._id,
+      video: id,
+    });
+    video.comments.push(comment._id);
+    video.save();
+    return res.status(201).json({ newCommentId: comment._id });
+  };
+
+  export const deleteComment = async(req, res) => {
+    const {
+        session: { user },
+        body: {commentId},
+        params: {id},
+    } = req;
+    const video = await Video.findById(id);
+    if (!video) {
+      return res.sendStatus(404);
+    }
+
+    video.comments = video.comments.filter((id) => id !== commentId);
+    video.save();
+
+    await Comment.findByIdAndDelete(commentId);
+
+    return res.sendStatus(200);
+  }

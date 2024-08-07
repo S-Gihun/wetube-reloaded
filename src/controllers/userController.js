@@ -114,7 +114,10 @@ export const finishGithubLogin = async(req, res) => {
     
 }
 export const logout = (req, res) => {
-    req.session.destroy();
+    req.session.user = null;
+    res.locals.loggedInUser = req.session.user;
+    req.session.loggedIn = false;
+    req.flash("info", "Bye Bye");
     return res.redirect("/");
 }
 export const getEdit = (req, res) => {
@@ -159,6 +162,7 @@ export const postEdit = async(req, res) => {
 
 export const getChangePassword = (req, res) => {
     if (req.session.user.socailOnly === true) {
+        req.flash("error", "Can't change password");
         return res.redirect("/");
     }
     return res.render("user/change-password", { pageTitle: "Change Password"});
@@ -182,6 +186,7 @@ export const postChangePassword = async (req, res) => {
     user.password = newPassword;
     await user.save() // pre("save") hash 작업 하기 위해 !
     req.session.user.password = user.password //session 업데이트 해주기
+    req.flash("info", "Password updated");
     return res.redirect("/users/logout");
 }
 
